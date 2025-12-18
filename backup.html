@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Firebase_version9_RealtimeDB(G'sACADEMY初学者用サンプル)</title>
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+
+<div>
+    <div> 名前：<input type="text" id="uname"> </div>
+    <div>
+        <textarea id="text" cols="30" rows="10"></textarea>
+        <button id="send">送信</button>
+    </div>
+    <div id="output" style="overflow: auto; height: 800px;"></div>
+</div>
+<!--/ コンテンツ表示画面 -->
+
+
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, push, set, update, onChildAdded, remove,  onChildChanged, onChildRemoved } 
+  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyCvEXHeI3l16q9A2PU2_0Jx0hDfVHXmgAg",
+    authDomain: "sample-d5c68.firebaseapp.com",
+    projectId: "sample-d5c68",
+    storageBucket: "sample-d5c68.firebasestorage.app",
+    messagingSenderId: "254457077124",
+    appId: "1:254457077124:web:a771f89399ac142851d1d1",
+    measurementId: "G-0C6RCXEG58",
+    databaseURL: "https://sample-d5c68-default-rtdb.firebaseio.com"  // ← コンソールのURLをコピペ
+
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const dbRef = ref(db,"chat")
+
+
+  // 送信
+$("#send").on("click",function(){
+    const msg = {
+        uname : $("#uname").val(),
+        text  : $("#text").val()
+    // alert(uname+text);
+    }
+  
+    const newPostRef = push(dbRef) //ユニークキーを生成している
+    console.log(newPostRef);
+    set(newPostRef,msg);
+});
+
+
+// 受信
+onChildAdded(dbRef,function(data){
+    const msg = data.val();
+    const key = data.key; //ユニークキー /削除・更新に必須
+    let h = '<p id="'+key+'">';
+        h +=msg.uname;
+        h +='<br>';
+        h += '<span contentEditable="true" id="'+key+'_update">' + msg.text + '</span>';
+        h += '<span class="ramove" date-key="'+key+'"">削除　</span>';
+        h += '<span class="update" date-key="'+key+'"">更新　</span>';
+        h += '</p>';
+        $("#output").append(h);
+});
+
+
+
+// 削除 : DBから削除
+$("#output").on("click",".ramove",function(){
+    const key = $(this).attr("date-key");
+    const delRef = ref(db,"chat/"+key);
+    remove(delRef);
+});
+
+// 更新 ; DBの text を更新
+$("#output").on("click",".update",function(){
+    const key = $(this).attr("date-key");
+    update(ref(db,"chat/"+key),{
+        text: $("#"+key+'_update').html()
+    });
+});
+
+// Firebase側を削除
+onChildRemoved(dbRef,function(data){
+     $("#"+data.key).remove();
+});     
+
+//Firebase側を更新
+onChildChanged(dbRef,function(data){
+$("#"+data.key+'_update').html(data.val().text);
+$("#"+data.key+'_update').fadeOut(800).fadeIn(800);
+});
+
+//   const analytics = getAnalytics(app);
+</script>
+
+</body>
+</html>
+

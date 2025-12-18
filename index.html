@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Firebase_version9_RealtimeDB(G'sACADEMY初学者用サンプル)</title>
+</head>
+<body>
+
+<!-- コンテンツ表示画面 -->
+<link rel="stylesheet" href="style.css">
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">DD</div>
+      <div>
+        <div class="title">DeepDive</div>
+        <div class="subtitle">Light Business UI (Chat + Insights)</div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <input class="search" type="search" placeholder="検索（ダミー）" />
+      <button class="btn ghost">保存</button>
+      <button class="btn">新規</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Chat -->
+    <main class="main">
+      <section class="panel chat">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">会話</div>
+            <div class="panel-sub">AI自動返信つき</div>
+          </div>
+          <div class="badge">Online</div>
+        </div>
+
+        <div id="output" class="chat-log"></div>
+
+        <div class="composer">
+          <textarea id="text" class="textarea" rows="2" placeholder="ここに入力…"></textarea>
+          <button id="send" class="btn primary">送信</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Insights -->
+    <aside class="side">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Insights</div>
+            <div class="panel-sub">DeepDive（簡易）</div>
+          </div>
+          <button class="btn ghost small">更新</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">要約（ダミー）</div>
+          <div class="card-body">
+            会話の要点をここに表示する想定。まずは見栄えを整える段階。
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">論点</div>
+          <ul class="list">
+            <li>いまの目的は何か</li>
+            <li>ボトルネックは何か</li>
+            <li>次の一手は何か</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">次アクション</div>
+          <div class="todo">
+            <label class="todo-item"><input type="checkbox" /> 目標を1行で定義</label>
+            <label class="todo-item"><input type="checkbox" /> 1週間の実験を決める</label>
+            <label class="todo-item"><input type="checkbox" /> 指標を1つ決める</label>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+<!--/ コンテンツ表示画面 -->
+
+
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<script type="module">
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getDatabase, ref, push, set, update, onChildAdded, remove,  onChildChanged, onChildRemoved } 
+  from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+  
+  };
+
+  // Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+signInAnonymously(auth).catch((e) => console.error("anonymous auth failed", e));
+const db = getDatabase(app);
+const dbRef = ref(db, "chat");
+
+// 送信（名前入力なし）
+$("#send").on("click", function () {
+const msg = {
+  uname: "You",
+  text: $("#text").val().trim(),
+  isAI: false,
+  createdAt: Date.now(),
+};
+
+  const newPostRef = push(dbRef);
+  set(newPostRef, msg);
+  $("#text").val(""); // 送信後クリア
+});
+
+
+onChildAdded(dbRef, function (data) {
+  const msg = data.val();
+  const key = data.key;
+
+  const who = msg.isAI ? "AI" : (msg.uname || "You");
+  const cls = msg.isAI ? "ai" : "user";
+
+  const safeText = String(msg.text || "");
+
+  let h = `<div class="msg ${cls}" id="${key}">`;
+  h += `<div class="meta">${who}</div>`;
+  h += `<div class="text">${safeText}</div>`;
+  h += `</div>`;
+
+  $("#output").append(h);
+
+  // 常に一番下へスクロール
+  const el = document.querySelector("#output");
+  el.scrollTop = el.scrollHeight;
+});
+
+
+
+// // 削除 : DBから削除
+// $("#output").on("click",".ramove",function(){
+//     const key = $(this).attr("date-key");
+//     const delRef = ref(db,"chat/"+key);
+//     remove(delRef);
+// });
+
+// // 更新 ; DBの text を更新
+// $("#output").on("click",".update",function(){
+//     const key = $(this).attr("date-key");
+//     update(ref(db,"chat/"+key),{
+//         text: $("#"+key+'_update').html()
+//     });
+//  });
+
+// Firebase側を削除
+onChildRemoved(dbRef,function(data){
+     $("#"+data.key).remove();
+});     
+
+//Firebase側を更新
+onChildChanged(dbRef,function(data){
+$("#"+data.key+'_update').html(data.val().text);
+$("#"+data.key+'_update').fadeOut(800).fadeIn(800);
+});
+
+//   const analytics = getAnalytics(app);
+</script>
+
+</body>
+</html>
+
